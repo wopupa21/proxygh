@@ -260,6 +260,60 @@ curl --user 'poko9' \
 
 不建议写成 `https://用户名:密码@域名/...`，这种 URL 容易进入 Shell 历史、日志和 Git 配置。
 
+### curl / wget 认证
+
+`curl` 可以只提供用户名，让它交互式询问密码。`-L` 用于跟随 Release 的重定向：
+
+```bash
+curl -L -u codex \
+  -o file.zip \
+  'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
+```
+
+Raw 文件示例：
+
+```bash
+curl -u codex \
+  'https://gh.example.com/raw/OWNER/REPOSITORY/BRANCH/path/file' \
+  -o file
+```
+
+`wget` 可以使用一次性命令，但密码会出现在命令行参数中，不适合共享服务器：
+
+```bash
+wget --user=codex --password='明文密码' \
+  -O file.zip \
+  'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
+```
+
+更适合长期使用的是权限为 600 的 `.netrc`：
+
+```bash
+cat > ~/.netrc <<'EOF'
+machine gh.example.com
+login codex
+password 你的ProxyGH密码
+EOF
+
+chmod 600 ~/.netrc
+wget -O file.zip \
+  'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
+```
+
+`.netrc` 以明文保存密码，只允许当前用户读取；不再使用时删除：
+
+```bash
+rm -f ~/.netrc
+```
+
+PowerShell 中使用 `curl.exe`，不要使用 PowerShell 的 `curl` 别名：
+
+```powershell
+curl.exe -L -u codex -o file.zip "https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE"
+```
+
+不要使用 `curl -u codex:密码` 或 `https://用户名:密码@域名/...`，否则密码可能进入 Shell 历史、进程列表、日志或 Git 配置。
+
 ### 源码包
 
 ```bash
