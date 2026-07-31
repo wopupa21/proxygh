@@ -1,0 +1,108 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __PROXYGH_DOMAIN__;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/proxygh-acme;
+        default_type text/plain;
+        auth_basic off;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://__PROXYGH_DOMAIN__$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name __PROXYGH_DOMAIN__;
+
+    ssl_certificate __PROXYGH_CERTIFICATE__;
+    ssl_certificate_key __PROXYGH_CERTIFICATE_KEY__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:ProxyGHTLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    server_tokens off;
+    auth_basic "ProxyGH";
+    auth_basic_user_file /etc/nginx/proxygh.htpasswd;
+
+    access_log /var/log/nginx/proxygh-access.log proxygh;
+    error_log /var/log/nginx/proxygh-error.log warn;
+
+    limit_req zone=proxygh_rate burst=30 nodelay;
+    limit_req_status 429;
+    limit_conn proxygh_conn 4;
+    limit_conn_status 429;
+
+    client_max_body_size 64m;
+
+    location = / {
+        default_type text/plain;
+        return 200 "ProxyGH is ready.\n";
+    }
+
+    # Explicitly reject the Git Smart HTTP push service.
+    location ~ ^/git/.+/git-receive-pack$ {
+        return 403;
+    }
+
+    location /git/ {
+        if ($arg_service = "git-receive-pack") { return 403; }
+
+        limit_except GET HEAD POST { deny all; }
+        rewrite ^/git/(.*)$ /$1 break;
+
+        include /etc/nginx/snippets/proxygh-common.conf;
+        proxy_pass https://github.com;
+        proxy_redirect https://github.com/ https://__PROXYGH_DOMAIN__/git/;
+        proxy_redirect ~^(/.*)$ https://__PROXYGH_DOMAIN__/git$1;
+    }
+
+    location ^~ /raw/ {
+        limit_except GET HEAD { deny all; }
+        rewrite ^/raw/(.*)$ /$1 break;
+
+        include /etc/nginx/snippets/proxygh-common.conf;
+        proxy_pass https://raw.githubusercontent.com;
+        proxy_redirect off;
+    }
+
+    location ^~ /archive/ {
+        limit_except GET HEAD { deny all; }
+        rewrite ^/archive/(.*)$ /$1 break;
+
+        include /etc/nginx/snippets/proxygh-common.conf;
+        proxy_pass https://codeload.github.com;
+        proxy_redirect off;
+    }
+
+    location ^~ /release/ {
+        limit_except GET HEAD { deny all; }
+        rewrite ^/release/(.*)$ /$1 break;
+
+        include /etc/nginx/snippets/proxygh-common.conf;
+        proxy_pass https://github.com;
+        proxy_redirect https://github.com/ https://__PROXYGH_DOMAIN__/release/;
+        proxy_redirect ~^https://release-assets\.githubusercontent\.com/(.*)$ https://__PROXYGH_DOMAIN__/_release_asset/$1;
+        proxy_redirect ~^(/.*)$ https://__PROXYGH_DOMAIN__/release$1;
+    }
+
+    # This route is not a generic fetcher: its sole upstream is fixed here.
+    location ^~ /_release_asset/ {
+        limit_except GET HEAD { deny all; }
+        rewrite ^/_release_asset/(.*)$ /$1 break;
+
+        include /etc/nginx/snippets/proxygh-common.conf;
+        proxy_pass https://release-assets.githubusercontent.com;
+        proxy_redirect off;
+    }
+
+    location / {
+        return 404;
+    }
+}

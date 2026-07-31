@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx shellcheck openssl
+
+      - name: Run policy tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Check shell syntax
+        run: bash -n scripts/*.sh
+
+      - name: Run ShellCheck
+        run: shellcheck scripts/*.sh
+
+      - name: Render test Nginx configuration
+        run: |
+          sudo install -d -m 0755 /etc/nginx/snippets /etc/nginx/sites-enabled
+          sudo install -m 0644 nginx/proxygh-zones.conf /etc/nginx/conf.d/proxygh-zones.conf
+          sudo install -m 0644 nginx/proxygh-common.conf /etc/nginx/snippets/proxygh-common.conf
+          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -subj '/CN=gh.example.com' \
+            -keyout /tmp/proxygh-key.pem -out /tmp/proxygh-cert.pem
+          sed -e 's|__PROXYGH_DOMAIN__|gh.example.com|g' \
+              -e 's|__PROXYGH_CERTIFICATE__|/tmp/proxygh-cert.pem|g' \
+              -e 's|__PROXYGH_CERTIFICATE_KEY__|/tmp/proxygh-key.pem|g' \
+              nginx/proxygh.conf.template | sudo tee /etc/nginx/sites-enabled/proxygh.conf >/dev/null
+          sudo install -m 0640 /dev/null /etc/nginx/proxygh.htpasswd
+
+      - name: Validate Nginx configuration
+        run: sudo nginx -t
