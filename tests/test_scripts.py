@@ -32,6 +32,8 @@ class ScriptContractTests(unittest.TestCase):
 
     def test_installer_backs_up_and_validates_before_reload(self):
         self.assertIn("backup_file", self.install)
+        self.assertIn("BACKUP_ROOT=/etc/nginx/proxygh-backups", self.install)
+        self.assertNotIn('backup="${destination}.proxygh-backup-', self.install)
         self.assertLess(self.install.index("nginx -t"), self.install.index("reload nginx"))
 
     def test_user_helper_uses_bcrypt_and_validates_username(self):

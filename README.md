@@ -386,10 +386,10 @@ sudo ./scripts/install.sh \
 
 ## 回滚和卸载
 
-安装器替换同名 Nginx 文件时，会留下类似下面的备份：
+安装器替换同名 Nginx 文件时，会把备份放在不被 Nginx 自动加载的目录，类似下面：
 
 ```text
-/etc/nginx/sites-available/proxygh.conf.proxygh-backup-20260731T120000Z
+/etc/nginx/proxygh-backups/proxygh.conf.proxygh-backup-20260731T120000Z
 ```
 
 手工恢复前，先列出并确认准确文件名。恢复后必须执行 `sudo nginx -t`，成功后再 reload。

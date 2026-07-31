@@ -66,6 +66,8 @@ command -v htpasswd >/dev/null 2>&1 || die "htpasswd is missing; install apache2
 
 install -d -m 0755 /etc/nginx/conf.d /etc/nginx/snippets /etc/nginx/sites-available /etc/nginx/sites-enabled
 install -d -m 0755 /var/www/proxygh-acme/.well-known/acme-challenge
+BACKUP_ROOT=/etc/nginx/proxygh-backups
+install -d -m 0700 "$BACKUP_ROOT"
 
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 declare -a WRITTEN=()
@@ -75,7 +77,7 @@ COMMITTED=0
 backup_file() {
     local destination=$1 backup=
     if [[ -e $destination || -L $destination ]]; then
-        backup="${destination}.proxygh-backup-${STAMP}"
+        backup="$BACKUP_ROOT/$(basename -- "$destination").proxygh-backup-${STAMP}"
         cp -a -- "$destination" "$backup"
     fi
     WRITTEN+=("$destination")
