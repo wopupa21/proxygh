@@ -83,6 +83,8 @@ class NginxPolicyTests(unittest.TestCase):
     def test_streaming_has_no_proxy_cache(self):
         self.assertIn("proxy_buffering off;", self.common)
         self.assertIn("proxy_max_temp_file_size 0;", self.common)
+        self.assertIn("proxy_buffer_size 32k;", self.common)
+        self.assertIn("proxy_buffers 8 32k;", self.common)
         self.assertNotIn("proxy_cache_path", self.all_config)
         self.assertNotRegex(self.all_config, r"(?m)^\s*proxy_cache\s+")
 
