@@ -4,6 +4,12 @@
 
 本项目不使用 Cloudflare，不改写 GitHub 网页，也不是任意 URL 代理。所有请求只能去往配置中写死的 GitHub 官方上游。
 
+## Demo
+
+公共 Demo 地址：<https://ghp.825915.xyz>
+
+这个地址只用于展示站点入口和 TLS 是否可达，不公开任何 ProxyGH 用户名或密码；代理资源请求仍需要认证。部署自己的实例时，请把下面命令中的 `YOUR_PROXY_USER` 替换成你在服务器上通过 `scripts/add-user.sh` 自己创建的用户名。`YOUR_PROXY_USER` 不是本项目固定账号，也不是 GitHub 用户名。
+
 ## 支持范围
 
 | 地址前缀 | 用途 | 固定上游 |
@@ -188,7 +194,7 @@ sudo ./scripts/install.sh \
 安装后先创建账号，否则所有代理请求都会返回 401：
 
 ```bash
-sudo ./scripts/add-user.sh poko9
+sudo ./scripts/add-user.sh your_proxy_user
 sudo ./scripts/add-user.sh friend-a
 ```
 
@@ -203,6 +209,8 @@ sudo htpasswd -D /etc/nginx/proxygh.htpasswd friend-a
 ## 使用方法
 
 以下示例仍假设代理域名为 `gh.example.com`。首次请求时输入 ProxyGH 用户名和密码，不是 GitHub 密码或 Token。
+
+> 说明：本文中的 `YOUR_PROXY_USER` 是占位符，必须替换成你自己运行 `sudo ./scripts/add-user.sh 用户名` 创建的 ProxyGH 用户名。请不要照抄这个占位符，也不要把服务器 Linux 用户名或 GitHub 用户名当成 ProxyGH 用户名；密码不会在仓库中公布。
 
 ### Git clone、fetch、pull
 
@@ -254,7 +262,7 @@ https://raw.githubusercontent.com/OWNER/REPOSITORY/REF/path/to/file
 代理地址：
 
 ```bash
-curl --user 'poko9' \
+curl --user 'YOUR_PROXY_USER' \
   'https://gh.example.com/raw/OWNER/REPOSITORY/REF/path/to/file'
 ```
 
@@ -265,7 +273,7 @@ curl --user 'poko9' \
 `curl` 可以只提供用户名，让它交互式询问密码。`-L` 用于跟随 Release 的重定向：
 
 ```bash
-curl -L -u codex \
+curl -L -u YOUR_PROXY_USER \
   -o file.zip \
   'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
 ```
@@ -273,7 +281,7 @@ curl -L -u codex \
 Raw 文件示例：
 
 ```bash
-curl -u codex \
+curl -u YOUR_PROXY_USER \
   'https://gh.example.com/raw/OWNER/REPOSITORY/BRANCH/path/file' \
   -o file
 ```
@@ -281,7 +289,7 @@ curl -u codex \
 `wget` 可以使用一次性命令，但密码会出现在命令行参数中，不适合共享服务器：
 
 ```bash
-wget --user=codex --password='明文密码' \
+wget --user=YOUR_PROXY_USER --password='明文密码' \
   -O file.zip \
   'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
 ```
@@ -291,7 +299,7 @@ wget --user=codex --password='明文密码' \
 ```bash
 cat > ~/.netrc <<'EOF'
 machine gh.example.com
-login codex
+login YOUR_PROXY_USER
 password 你的ProxyGH密码
 EOF
 
@@ -309,19 +317,19 @@ rm -f ~/.netrc
 PowerShell 中使用 `curl.exe`，不要使用 PowerShell 的 `curl` 别名：
 
 ```powershell
-curl.exe -L -u codex -o file.zip "https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE"
+curl.exe -L -u YOUR_PROXY_USER -o file.zip "https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE"
 ```
 
-不要使用 `curl -u codex:密码` 或 `https://用户名:密码@域名/...`，否则密码可能进入 Shell 历史、进程列表、日志或 Git 配置。
+不要使用 `curl -u YOUR_PROXY_USER:密码` 或 `https://用户名:密码@域名/...`，否则密码可能进入 Shell 历史、进程列表、日志或 Git 配置。
 
 ### 源码包
 
 ```bash
-curl --fail --location --user 'poko9' \
+curl --fail --location --user 'YOUR_PROXY_USER' \
   --output source.zip \
   'https://gh.example.com/archive/OWNER/REPOSITORY/zip/REF'
 
-curl --fail --location --user 'poko9' \
+curl --fail --location --user 'YOUR_PROXY_USER' \
   --output source.tar.gz \
   'https://gh.example.com/archive/OWNER/REPOSITORY/tar.gz/REF'
 ```
@@ -338,7 +346,7 @@ curl --fail --location --user 'poko9' \
 下载示例：
 
 ```bash
-curl --fail --location --user 'poko9' \
+curl --fail --location --user 'YOUR_PROXY_USER' \
   --continue-at - \
   --output FILE \
   'https://gh.example.com/release/OWNER/REPOSITORY/releases/download/TAG/FILE'
@@ -358,7 +366,7 @@ sudo systemctl status nginx --no-pager
 执行项目自带的交互式冒烟测试：
 
 ```bash
-./scripts/smoke-test.sh --domain gh.example.com --user poko9
+./scripts/smoke-test.sh --domain gh.example.com --user YOUR_PROXY_USER
 ```
 
 它会验证：
@@ -433,7 +441,7 @@ sudo ./scripts/install.sh \
   --domain gh.example.com \
   --certificate /你的/fullchain.pem \
   --certificate-key /你的/privkey.pem
-./scripts/smoke-test.sh --domain gh.example.com --user poko9
+./scripts/smoke-test.sh --domain gh.example.com --user YOUR_PROXY_USER
 ```
 
 安装器不会覆盖 htpasswd 用户文件。
